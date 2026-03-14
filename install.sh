@@ -31,7 +31,7 @@ echo "  ✓ Команды установлены (7 файлов)"
 
 # Копируем агентов
 cp "$SCRIPT_DIR/agents/"*.md "$TARGET_DIR/.claude/agents/"
-echo "  ✓ Агенты установлены (2 файла)"
+echo "  ✓ Агенты установлены (3 файла)"
 
 # Копируем workflows
 cp "$SCRIPT_DIR/workflows/"*.md "$TARGET_DIR/.claude/bpd/workflows/"
