@@ -7,10 +7,10 @@ description: Показать справку по командам BPD
 </objective>
 
 <execution_context>
-@./.claude/bpd/workflows/help.md
+@$HOME_DIR/.claude/bpd/workflows/help.md
 </execution_context>
 
 <process>
-Выведи содержимое справки из @./.claude/bpd/workflows/help.md.
+Выведи содержимое справки из @$HOME_DIR/.claude/bpd/workflows/help.md.
 Без добавлений и комментариев.
 </process>

@@ -13,10 +13,10 @@ allowed-tools:
 </objective>
 
 <execution_context>
-@./.claude/bpd/workflows/status.md
+@$HOME_DIR/.claude/bpd/workflows/status.md
 </execution_context>
 
 <process>
-Выполни workflow из @./.claude/bpd/workflows/status.md.
+Выполни workflow из @$HOME_DIR/.claude/bpd/workflows/status.md.
 Покажи только результат — без лишних комментариев.
 </process>

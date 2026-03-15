@@ -15,9 +15,9 @@ allowed-tools:
 </objective>
 
 <execution_context>
-@./.claude/bpd/workflows/update.md
+@$HOME_DIR/.claude/bpd/workflows/update.md
 </execution_context>
 
 <process>
-Выполни workflow из @./.claude/bpd/workflows/update.md от начала до конца.
+Выполни workflow из @$HOME_DIR/.claude/bpd/workflows/update.md от начала до конца.
 </process>

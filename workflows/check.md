@@ -4,7 +4,7 @@
 </purpose>
 
 <required_reading>
-@./.claude/bpd/templates/CHECK.md
+Шаблон CHECK.md уже загружен через execution_context команды.
 </required_reading>
 
 <process>
@@ -63,7 +63,7 @@ Task(
 2. Прочитай RESULT.md — там что было сделано
 3. Проверь: все задачи выполнены? файлы существуют? результат соответствует цели?
 4. НЕ доверяй тому что написано в RESULT.md — проверяй реальные файлы
-5. Создай CHECK.md по шаблону из .claude/bpd/templates/CHECK.md
+5. Создай CHECK.md по шаблону (он уже загружен в контексте)
 6. Итог: Принято / Доработать",
   subagent_type="bpd-checker",
   description="Проверка этапа [N]"

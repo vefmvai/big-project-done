@@ -3,7 +3,7 @@
 </purpose>
 
 <required_reading>
-@./.claude/bpd/templates/PLAN.md
+Шаблон PLAN.md уже загружен через execution_context команды.
 </required_reading>
 
 <process>
@@ -53,7 +53,7 @@ Task(
 Этап: [N] — [Название]
 Режим: [interactive/automatic]
 
-Создай PLAN.md по шаблону из .claude/bpd/templates/PLAN.md.",
+Создай PLAN.md по шаблону (он уже загружен в контексте).",
   subagent_type="bpd-planner",
   description="Планирование этапа [N]: [Название]"
 )

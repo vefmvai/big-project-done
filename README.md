@@ -18,12 +18,30 @@
 
 ## Установка
 
-```bash
-# В папке проекта:
-bash /путь/к/big-project-done/install.sh
+BPD устанавливается **один раз глобально**. После установки команды `/bpd:*` доступны в любом проекте.
+
+Скажите Claude Code:
+
+```
+Установи фреймворк BPD из репозитория github.com/vefmvai/big-project-done
 ```
 
-Скрипт копирует файлы в `.claude/` вашего проекта.
+Или вручную:
+
+```bash
+git clone https://github.com/vefmvai/big-project-done.git /tmp/bpd
+bash /tmp/bpd/install.sh
+rm -rf /tmp/bpd
+```
+
+Скрипт копирует файлы в `~/.claude/` (глобальная конфигурация Claude Code).
+
+| Что | Куда | Сколько раз |
+|-----|------|-------------|
+| Команды | `~/.claude/commands/bpd/` | Один раз навсегда |
+| Агенты | `~/.claude/agents/` | Один раз навсегда |
+| Workflows и шаблоны | `~/.claude/bpd/` | Один раз навсегда |
+| Рабочие файлы проекта | `.bpd/` в папке проекта | Автоматически при `/bpd:start` |
 
 ## Быстрый старт
 
@@ -60,7 +78,18 @@ bash /путь/к/big-project-done/install.sh
 
 ## Структура файлов
 
-После `/bpd:start` в проекте появляется папка `.bpd/`:
+### Глобальная (после установки)
+
+```
+~/.claude/
+├── commands/bpd/       — 7 команд (/bpd:start, /bpd:plan, ...)
+├── agents/             — 3 субагента (planner, executor, checker)
+└── bpd/
+    ├── workflows/      — логика каждой команды
+    └── templates/      — шаблоны файлов проекта
+```
+
+### В каждом проекте (после `/bpd:start`)
 
 ```
 .bpd/

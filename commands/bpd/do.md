@@ -24,8 +24,8 @@ allowed-tools:
 </objective>
 
 <execution_context>
-@./.claude/bpd/workflows/do.md
-@./.claude/bpd/templates/RESULT.md
+@$HOME_DIR/.claude/bpd/workflows/do.md
+@$HOME_DIR/.claude/bpd/templates/RESULT.md
 </execution_context>
 
 <context>
@@ -33,5 +33,5 @@ allowed-tools:
 </context>
 
 <process>
-Выполни workflow из @./.claude/bpd/workflows/do.md от начала до конца.
+Выполни workflow из @$HOME_DIR/.claude/bpd/workflows/do.md от начала до конца.
 </process>

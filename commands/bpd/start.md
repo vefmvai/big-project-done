@@ -10,7 +10,7 @@ allowed-tools:
 <objective>
 Инициализация нового проекта через интервью с пользователем.
 
-Создаёт:
+Создаёт в текущей директории:
 - `.bpd/PROJECT.md` — описание проекта
 - `.bpd/ROADMAP.md` — дорожная карта
 - `.bpd/STATE.md` — текущее состояние
@@ -20,14 +20,14 @@ allowed-tools:
 </objective>
 
 <execution_context>
-@./.claude/bpd/workflows/start.md
-@./.claude/bpd/templates/PROJECT.md
-@./.claude/bpd/templates/ROADMAP.md
-@./.claude/bpd/templates/STATE.md
-@./.claude/bpd/templates/config.json
+@$HOME_DIR/.claude/bpd/workflows/start.md
+@$HOME_DIR/.claude/bpd/templates/PROJECT.md
+@$HOME_DIR/.claude/bpd/templates/ROADMAP.md
+@$HOME_DIR/.claude/bpd/templates/STATE.md
+@$HOME_DIR/.claude/bpd/templates/config.json
 </execution_context>
 
 <process>
-Выполни workflow из @./.claude/bpd/workflows/start.md от начала до конца.
+Выполни workflow из @$HOME_DIR/.claude/bpd/workflows/start.md от начала до конца.
 Следуй всем шагам и проверкам.
 </process>

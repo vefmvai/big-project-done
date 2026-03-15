@@ -4,11 +4,8 @@
 </purpose>
 
 <required_reading>
-Прочитай шаблоны перед началом:
-@./.claude/bpd/templates/PROJECT.md
-@./.claude/bpd/templates/ROADMAP.md
-@./.claude/bpd/templates/STATE.md
-@./.claude/bpd/templates/config.json
+Шаблоны уже загружены через execution_context команды.
+Используй их для создания файлов проекта.
 </required_reading>
 
 <process>
@@ -89,7 +86,7 @@ questions: [
   "mode": "[интерактивный|автоматический]",
   "use_subagents": [true если масштаб "большой", иначе false],
   "created": "[сегодняшняя дата]",
-  "version": "1.0.0"
+  "version": "1.1.0"
 }
 ```
 

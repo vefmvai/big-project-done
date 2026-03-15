@@ -1,51 +1,54 @@
 #!/bin/bash
 
 # BPD (Big Project Done) — установщик
-# Копирует файлы фреймворка в .claude/ текущего проекта
+# Устанавливает фреймворк ГЛОБАЛЬНО в ~/.claude/
+# После установки команды /bpd:* доступны в любом проекте
 
 set -e
 
 # Определяем где лежит сам скрипт (папка с файлами BPD)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Целевая папка — текущая директория пользователя
-TARGET_DIR="$(pwd)"
+# Целевая папка — глобальная конфигурация Claude Code
+TARGET_DIR="$HOME/.claude"
 
 echo ""
 echo "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "   BPD — Big Project Done v1.0.0"
+echo "   BPD — Big Project Done v1.1.0"
 echo "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "  Установка в: $TARGET_DIR/.claude/"
+echo "  Глобальная установка в: $TARGET_DIR/"
 echo ""
 
 # Создаём структуру папок
-mkdir -p "$TARGET_DIR/.claude/commands/bpd"
-mkdir -p "$TARGET_DIR/.claude/agents"
-mkdir -p "$TARGET_DIR/.claude/bpd/workflows"
-mkdir -p "$TARGET_DIR/.claude/bpd/templates"
+mkdir -p "$TARGET_DIR/commands/bpd"
+mkdir -p "$TARGET_DIR/agents"
+mkdir -p "$TARGET_DIR/bpd/workflows"
+mkdir -p "$TARGET_DIR/bpd/templates"
 
-# Копируем команды
-cp "$SCRIPT_DIR/commands/bpd/"*.md "$TARGET_DIR/.claude/commands/bpd/"
+# Копируем команды (с подстановкой путей)
+for file in "$SCRIPT_DIR/commands/bpd/"*.md; do
+  sed "s|\\\$HOME_DIR|$HOME|g" "$file" > "$TARGET_DIR/commands/bpd/$(basename "$file")"
+done
 echo "  ✓ Команды установлены (7 файлов)"
 
 # Копируем агентов
-cp "$SCRIPT_DIR/agents/"*.md "$TARGET_DIR/.claude/agents/"
+cp "$SCRIPT_DIR/agents/"*.md "$TARGET_DIR/agents/"
 echo "  ✓ Агенты установлены (3 файла)"
 
 # Копируем workflows
-cp "$SCRIPT_DIR/workflows/"*.md "$TARGET_DIR/.claude/bpd/workflows/"
+cp "$SCRIPT_DIR/workflows/"*.md "$TARGET_DIR/bpd/workflows/"
 echo "  ✓ Workflows установлены (7 файлов)"
 
 # Копируем шаблоны
-cp "$SCRIPT_DIR/templates/"* "$TARGET_DIR/.claude/bpd/templates/"
+cp "$SCRIPT_DIR/templates/"* "$TARGET_DIR/bpd/templates/"
 echo "  ✓ Шаблоны установлены (7 файлов)"
 
 echo ""
-echo "  ✓ BPD установлен!"
+echo "  ✓ BPD установлен глобально!"
 echo ""
-echo "  Запустите /bpd:start в Claude Code"
-echo "  чтобы начать новый проект."
+echo "  Команды /bpd:* теперь доступны в любом проекте."
+echo "  Откройте папку проекта и запустите /bpd:start"
 echo ""
 echo "  /bpd:help — справка по командам"
 echo ""
