@@ -42,7 +42,7 @@ echo "  ✓ Workflows установлены (7 файлов)"
 
 # Копируем шаблоны
 cp "$SCRIPT_DIR/templates/"* "$TARGET_DIR/bpd/templates/"
-echo "  ✓ Шаблоны установлены (7 файлов)"
+echo "  ✓ Шаблоны установлены (8 файлов)"
 
 echo ""
 echo "  ✓ BPD установлен глобально!"
