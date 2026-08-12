@@ -98,7 +98,7 @@ AskUserQuestion:
   "use_subagents": false,
   "features": {},
   "created": "ГГГГ-ММ-ДД",
-  "bpd_version": "2.1.0"
+  "bpd_version": "2.1.1"
 }
 ```
 
