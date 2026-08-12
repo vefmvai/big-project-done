@@ -37,7 +37,8 @@ command -v claude >/dev/null 2>&1 || {
 }
 
 STAND="$(mktemp -d)"
-trap 'rm -rf "$STAND"' EXIT
+# KEEP=1 — оставить стенд на диске, чтобы разобрать, что вышло.
+if [ -z "${KEEP:-}" ]; then trap 'rm -rf "$STAND"' EXIT; else echo "   Стенд сохранён: $STAND"; fi
 
 # Прогон идёт по СНИМКУ плагина, а не по живой папке. Иначе правка репозитория
 # посреди прогона меняет то, что прогон измеряет, и результат ничего не значит.
@@ -172,14 +173,15 @@ if run_this plan; then
     for h in "## Цель" "## Задачи" "## Чеклист качества" "## Ожидаемый результат"; do
       if grep -qF "$h" "$F"; then ok "в плане есть раздел «${h}»"; else bad "в плане нет раздела «${h}»"; fi
     done
-    N="$(grep -cE '^\s*[-*]\s*\[[ xX]\]' "$F")"
+    N="$(grep -cE '^[[:space:]]*[-*][[:space:]]*\[[ xX]\]' "$F")"
+    [ -n "$N" ] || N=0
     if [ "$N" -ge 3 ] && [ "$N" -le 10 ]; then
       ok "задач $N — в пределах 3–10"
     else
       bad "задач $N, а правило требует 3–10"
     fi
     # Возврат бага Б14: боксы только в разделе «Задачи».
-    if awk '/^## /{s=$0} /^\s*[-*]\s*\[[ xX]\]/{if (s !~ /Задачи/) print}' "$F" | grep -q .; then
+    if awk '/^## /{s=$0} /^[[:space:]]*[-*][[:space:]]*\[[ xX]\]/{if (s !~ /Задачи/) print}' "$F" | grep -q .; then
       bad "ВОЗВРАТ Б14: бокс вне раздела «Задачи»"
     else
       ok "галочек вне раздела «Задачи» нет"
@@ -198,7 +200,11 @@ if run_this 'do'; then
   P="$(project 'do')"
   live "$P" "/bpd:do 02"
   F="$P/.bpd/stages/02-sbor"
-  OPEN="$(grep -cE '^\s*[-*]\s*\[ \]' "$F/PLAN.md" 2>/dev/null || echo 0)"
+  # grep -c при нуле совпадений печатает «0» И возвращает единицу, поэтому
+  # запасной «|| echo 0» дописывал второй ноль и ломал сравнение чисел.
+  # \s в BSD grep тоже не гарантирован — берём POSIX-класс.
+  OPEN="$(grep -cE '^[[:space:]]*[-*][[:space:]]*\[ \]' "$F/PLAN.md" 2>/dev/null)"
+  [ -n "$OPEN" ] || OPEN=0
   if [ -f "$F/RESULT.md" ]; then
     ok "RESULT.md создан"
     if [ "$OPEN" -eq 0 ]; then
