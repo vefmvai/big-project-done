@@ -55,7 +55,7 @@ break_it() {
   if echo "$OUT" | grep -qF -- "$want"; then
     ok "$desc"
   else
-    bad "$desc — код 1 верный, но в выводе нет «$want»"
+    bad "$desc — код 1 верный, но в выводе нет «${want}»"
   fi
 }
 
@@ -150,6 +150,12 @@ import pathlib
 p = pathlib.Path("templates/CHECK.md")
 p.write_text(p.read_text("utf-8").replace(
     "## Итог\n", "## Итог\n\n> Пишется «Принято» или «Доработать».\n", 1), "utf-8")'
+
+break_it "П15 переменная без скобок перед русским" "ПЕРЕМЕННАЯ БЕЗ СКОБОК" '
+import pathlib
+p = pathlib.Path("tests/run-tests.sh")
+примана = chr(36) + "PASS" + chr(187)
+p.write_text(p.read_text("utf-8") + chr(10) + "echo " + chr(34) + примана + chr(34) + chr(10), "utf-8")'
 
 echo
 echo "── Правило переписано дословно: предупреждение, но не ошибка ──"

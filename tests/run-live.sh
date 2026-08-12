@@ -20,7 +20,7 @@
 set -u
 cd "$(dirname "$0")/.." || { echo "не войти в корень плагина"; exit 2; }
 PLUGIN="$(pwd)"
-CLEAN="$PLUGIN/tests/fixtures/clean"
+CLEAN=""  # задаётся снимком ниже
 ONLY="${1:-}"
 
 PASS=0
@@ -39,6 +39,16 @@ command -v claude >/dev/null 2>&1 || {
 STAND="$(mktemp -d)"
 trap 'rm -rf "$STAND"' EXIT
 
+# Прогон идёт по СНИМКУ плагина, а не по живой папке. Иначе правка репозитория
+# посреди прогона меняет то, что прогон измеряет, и результат ничего не значит.
+# (Отдельно помнить: править сам этот скрипт во время его работы нельзя —
+#  bash дочитывает файл по ходу и сбивается на сдвиге строк. Проверено собой.)
+SNAPSHOT="$STAND/plugin"
+mkdir -p "$SNAPSHOT"
+(cd "$PLUGIN" && tar --exclude=.git -cf - .) | (cd "$SNAPSHOT" && tar -xf -)
+PLUGIN_UNDER_TEST="$SNAPSHOT"
+CLEAN="$SNAPSHOT/tests/fixtures/clean"
+
 # Установленная копия BPD отключается, иначе прогон измерит не тот код.
 # Проверено: с этой настройкой /bpd:* исчезает, если не подсунуть --plugin-dir.
 SETTINGS="$STAND/settings.json"
@@ -53,16 +63,16 @@ cat > "$SETTINGS" <<'EOF'
 EOF
 
 OUT=""
-CODE=0
 # live <папка проекта> <промпт> — запускает Claude в этой папке
 live() {
   local dir="$1" prompt="$2"
   OUT="$(cd "$dir" && claude -p "$prompt" \
-      --plugin-dir "$PLUGIN" \
+      --plugin-dir "$PLUGIN_UNDER_TEST" \
       --settings "$SETTINGS" \
       --permission-mode acceptEdits \
       < /dev/null 2>&1)"
-  CODE=$?
+  # Код возврата claude намеренно не проверяем: судим по тому, что осталось
+  # на диске. «Отработал без ошибки» и «сделал что обещал» — разные вещи.
 }
 
 # проект <имя> — одноразовая копия чистой фикстуры
@@ -75,7 +85,7 @@ project() {
 # validate <папка> — валидатор обязан быть доволен после работы команды
 validate() {
   local dir="$1" desc="$2" out code
-  out="$("$PLUGIN/bin/bpd-validate" "$dir" 2>&1)"; code=$?
+  out="$("$PLUGIN_UNDER_TEST/bin/bpd-validate" "$dir" 2>&1)"; code=$?
   if [ "$code" -eq 0 ]; then
     ok "$desc — валидатор доволен"
   else
@@ -92,6 +102,7 @@ run_this() { [ -z "$ONLY" ] || [ "$ONLY" = "$1" ]; }
 
 echo "══ Живые прогоны BPD ══"
 echo "   Плагин: $PLUGIN"
+echo "   Снимок: $SNAPSHOT"
 echo "   Стенд:  $STAND"
 echo
 
@@ -159,7 +170,7 @@ if run_this plan; then
   if [ -f "$F" ]; then
     ok "PLAN.md создан"
     for h in "## Цель" "## Задачи" "## Чеклист качества" "## Ожидаемый результат"; do
-      if grep -qF "$h" "$F"; then ok "в плане есть раздел «$h»"; else bad "в плане нет раздела «$h»"; fi
+      if grep -qF "$h" "$F"; then ok "в плане есть раздел «${h}»"; else bad "в плане нет раздела «${h}»"; fi
     done
     N="$(grep -cE '^\s*[-*]\s*\[[ xX]\]' "$F")"
     if [ "$N" -ge 3 ] && [ "$N" -le 10 ]; then
@@ -181,10 +192,10 @@ if run_this plan; then
 fi
 
 # ── 4. /bpd:do ─────────────────────────────────────────────────────────────
-if run_this do; then
+if run_this 'do'; then
   echo
   echo "── /bpd:do 02 ──"
-  P="$(project do)"
+  P="$(project 'do')"
   live "$P" "/bpd:do 02"
   F="$P/.bpd/stages/02-sbor"
   OPEN="$(grep -cE '^\s*[-*]\s*\[ \]' "$F/PLAN.md" 2>/dev/null || echo 0)"
@@ -196,7 +207,7 @@ if run_this do; then
       bad "ВОЗВРАТ Б4: RESULT.md есть, а незакрытых задач $OPEN"
     fi
     for h in "## Что сделано" "## Созданные и изменённые файлы"; do
-      if grep -qF "$h" "$F/RESULT.md"; then ok "в отчёте есть «$h»"; else bad "в отчёте нет «$h»"; fi
+      if grep -qF "$h" "$F/RESULT.md"; then ok "в отчёте есть «${h}»"; else bad "в отчёте нет «${h}»"; fi
     done
   elif [ "$OPEN" -eq 0 ]; then
     bad "все задачи закрыты, а RESULT.md нет — работа встала на отчёте"
@@ -218,12 +229,12 @@ if run_this check; then
   if [ -f "$F" ]; then
     ok "CHECK.md создан"
     for h in "## Задачи из плана" "## Заявленные файлы" "## Чеклист качества" "## Итог" "## Замечания"; do
-      if grep -qF "$h" "$F"; then ok "в отчёте проверки есть «$h»"; else bad "нет раздела «$h»"; fi
+      if grep -qF "$h" "$F"; then ok "в отчёте проверки есть «${h}»"; else bad "нет раздела «${h}»"; fi
     done
     V="$(awk '/^## Итог/{f=1;next} /^## /{f=0} f' "$F" | grep -vE '^\s*$|^>' | head -1 | tr -d '*_ ')"
     case "$V" in
       Принято|Доработать) ok "вердикт ровно одним словом: $V" ;;
-      *) bad "вердикт третьим словом: «$V» — этап останется без статуса" ;;
+      *) bad "вердикт третьим словом: «${V}» — этап останется без статуса" ;;
     esac
   else
     bad "CHECK.md не создан"
@@ -246,7 +257,8 @@ if run_this update; then
     case " $AFTER " in *" $d "*) ;; *) KEPT=0; bad "папка $d переименована или исчезла" ;; esac
   done
   [ "$KEPT" -eq 1 ] && ok "ВОЗВРАТ Б5 не случился: старые папки не переименованы"
-  NEW="$(cd "$P/.bpd/stages" && ls | grep -E '^08-' | head -1)"
+  NEW=""
+  for d in "$P"/.bpd/stages/08-*; do [ -d "$d" ] && NEW="$d"; done
   if [ -n "$NEW" ]; then
     ok "новый этап получил номер 08 (максимальный 07 плюс один)"
   else
