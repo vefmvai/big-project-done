@@ -1,9 +1,9 @@
 {
   "project_name": "",
-  "scale": "средний",
-  "mode": "интерактивный",
+  "scale": "medium",
+  "mode": "interactive",
   "use_subagents": false,
   "features": {},
   "created": "",
-  "version": "1.1.0"
+  "bpd_version": "2.0.0"
 }

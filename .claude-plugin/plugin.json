@@ -1,0 +1,18 @@
+{
+  "name": "bpd",
+  "description": "Big Project Done — ведение больших проектов, которые не помещаются в одну сессию. Книга, курс, исследование, сайт, мероприятие: проект режется на этапы, каждый этап планируется, выполняется и проверяется, состояние живёт в файлах и переживает /clear. Статус этапа не хранится, а вычисляется по файлам на диске. Для больших проектов планировщик, исполнитель и проверщик работают в свежем контексте — каждый со своими шаблонами, а не с чужой памятью.",
+  "version": "2.0.0",
+  "author": {
+    "name": "vefmvai"
+  },
+  "homepage": "https://github.com/vefmvai/big-project-done",
+  "repository": "https://github.com/vefmvai/big-project-done",
+  "license": "MIT",
+  "keywords": [
+    "project-management",
+    "planning",
+    "roadmap",
+    "long-running",
+    "context-rot"
+  ]
+}
