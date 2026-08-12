@@ -1,0 +1,26 @@
+{
+  "description": "Хуки BPD. Старт сессии: что было и какой следующий шаг, из STATE.md. После записи в .bpd/: автопрогон валидатора. Оба молчат, если в проекте нет папки .bpd/",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.py\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/validate-on-write.py\""
+          }
+        ]
+      }
+    ]
+  }
+}

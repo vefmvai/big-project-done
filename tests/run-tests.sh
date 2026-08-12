@@ -157,6 +157,108 @@ if [ "$CODE" -eq 2 ]; then ok "нет python3 → код 2, а не 127"; else b
 has "названа причина и способ починки" "не найден python3"
 
 echo
+echo "── Хук автопрогона после записи ──"
+
+# hook_say <папка проекта> <инструмент> <записанный файл>
+# Печатает то, что хук положил в контекст (пусто = хук промолчал).
+hook_say() {
+  printf '{"tool_name":"%s","tool_input":{"file_path":"%s"},"cwd":"%s"}' "$2" "$3" "$1" \
+  | CLAUDE_PLUGIN_ROOT="$PLUGIN" CLAUDE_PROJECT_DIR="$1" \
+    python3 "$PLUGIN/hooks/validate-on-write.py" 2>&1 \
+  | python3 -c 'import json,sys
+сырое = sys.stdin.read().strip()
+if not сырое:
+    sys.exit(0)
+try:
+    print(json.loads(сырое)["hookSpecificOutput"]["additionalContext"])
+except Exception as беда:
+    print("НЕ РАЗОБРАЛИ ОТВЕТ ХУКА:", беда, сырое[:200])'
+}
+
+# Ворота проверяем на ЗАВЕДОМО СЛОМАННОМ проекте: если проверять на здоровом,
+# молчание хука ничего не докажет — он и так молчал бы.
+NOGATE="$STAND/nogate"
+cp -R "$BROKEN" "$NOGATE"
+mv "$NOGATE/.bpd" "$NOGATE/bpd-otklyuchena"
+SAY="$(hook_say "$NOGATE" Write "$NOGATE/bpd-otklyuchena/ROADMAP.md")"
+if [ -z "$SAY" ]; then
+  ok "без папки .bpd/ хук молчит даже на сломанном проекте"
+else
+  bad "без .bpd/ хук всё равно заговорил: $SAY"
+fi
+
+SAY="$(hook_say "$CLEAN" Write "$CLEAN/.bpd/ROADMAP.md")"
+if [ -z "$SAY" ]; then ok "на здоровом проекте хук молчит"; else bad "хук шумит на здоровом: $SAY"; fi
+
+SAY="$(hook_say "$BROKEN" Read "$BROKEN/.bpd/ROADMAP.md")"
+if [ -z "$SAY" ]; then ok "на читающий инструмент хук не реагирует"; else bad "хук сработал на Read"; fi
+
+SAY="$(hook_say "$BROKEN" Write "$BROKEN/razdel-1.md")"
+if [ -z "$SAY" ]; then ok "на запись вне .bpd/ хук не реагирует"; else bad "хук сработал вне .bpd/"; fi
+
+SAY="$(hook_say "$BROKEN" Write "$BROKEN/.bpd/ROADMAP.md")"
+case "$SAY" in
+  *"нашёл проблемы"*) ok "на сломанном проекте хук называет проблемы (код 1)" ;;
+  *) bad "хук смолчал на сломанном проекте либо ответил не тем: $SAY" ;;
+esac
+case "$SAY" in
+  *"этап 13: 13-a, 13-b"*) ok "в контекст попал сам отчёт валидатора" ;;
+  *) bad "отчёт валидатора в контекст не попал" ;;
+esac
+
+# Валидатора нет на месте — это «не состоялось», а не «чисто».
+NOVAL="$STAND/noval"; mkdir -p "$NOVAL/bin"
+SAY="$(printf '{"tool_name":"Write","tool_input":{"file_path":"%s"},"cwd":"%s"}' \
+        "$BROKEN/.bpd/ROADMAP.md" "$BROKEN" \
+      | CLAUDE_PLUGIN_ROOT="$NOVAL" CLAUDE_PROJECT_DIR="$BROKEN" \
+        python3 "$PLUGIN/hooks/validate-on-write.py" 2>&1)"
+case "$SAY" in
+  *"не найден"*|*"не выполнена"*) ok "валидатора нет → хук говорит, а не молчит" ;;
+  *) bad "валидатора нет, а хук смолчал: $SAY" ;;
+esac
+
+# Собственная поломка хука обязана быть названа вслух, код при этом 0.
+BROKEN_HOOK="$STAND/broken-hook.py"
+sed 's/^def main() -> None:/def main() -> None:\n    raise RuntimeError("сбой изнутри хука")/' \
+  "$PLUGIN/hooks/validate-on-write.py" > "$BROKEN_HOOK"
+cp "$PLUGIN/hooks/_common.py" "$STAND/_common.py"
+SAY="$(printf '{"tool_name":"Write","tool_input":{"file_path":"%s"},"cwd":"%s"}' \
+        "$CLEAN/.bpd/ROADMAP.md" "$CLEAN" \
+      | CLAUDE_PLUGIN_ROOT="$PLUGIN" CLAUDE_PROJECT_DIR="$CLEAN" \
+        python3 "$BROKEN_HOOK" 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ]; then ok "сломанный хук не роняет работу инструмента (код 0)"; else bad "сломанный хук вернул $CODE"; fi
+case "$SAY" in
+  *"не отработал"*) ok "сломанный хук сознаётся вслух" ;;
+  *) bad "сломанный хук промолчал: $SAY" ;;
+esac
+
+echo
+echo "── Хук старта сессии ──"
+
+start_say() {
+  printf '{"cwd":"%s"}' "$1" \
+  | CLAUDE_PLUGIN_ROOT="$PLUGIN" CLAUDE_PROJECT_DIR="$1" \
+    python3 "$PLUGIN/hooks/session-start.py" 2>&1 \
+  | python3 -c 'import json,sys
+сырое = sys.stdin.read().strip()
+if сырое:
+    print(json.loads(сырое)["hookSpecificOutput"]["additionalContext"])'
+}
+
+SAY="$(start_say "$NOGATE")"
+if [ -z "$SAY" ]; then ok "не BPD-проект → хук старта молчит"; else bad "хук старта заговорил зря: $SAY"; fi
+
+SAY="$(start_say "$CLEAN")"
+case "$SAY" in
+  *"/bpd:do 02"*) ok "хук старта подаёт следующий шаг из STATE.md" ;;
+  *) bad "следующий шаг не подан: $SAY" ;;
+esac
+case "$SAY" in
+  *%*) bad "хук старта считает проценты — это дом /bpd:status" ;;
+  *) ok "хук старта ничего не вычисляет сам" ;;
+esac
+
+echo
 echo "── Текст не врёт о машине ──"
 DECLARED="$(grep -m1 '^ПРОВЕРКИ = ' "$PY_VALIDATE" | tr -dc '0-9')"
 ACTUAL="$(grep -c '^    # ── [0-9]' "$PY_VALIDATE")"
