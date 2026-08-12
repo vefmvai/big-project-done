@@ -31,7 +31,10 @@ WORK="$STAND/work"
 mkdir -p "$PRISTINE"
 (cd "$PLUGIN" && tar --exclude=.git -cf - .) | (cd "$PRISTINE" && tar -xf -)
 
-reset_copy() { rm -rf "$WORK"; cp -R "$PRISTINE" "$WORK"; }
+# Метку .git ставим намеренно: проверка про пустые папки имеет смысл только
+# в репозитории и в снимке молчит. Без метки копия выглядела бы снимком,
+# и тест этой проверки был бы ложно-зелёным.
+reset_copy() { rm -rf "$WORK"; cp -R "$PRISTINE" "$WORK"; mkdir -p "$WORK/.git"; }
 
 # run_lint <папка> — печатает вывод, возвращает код линтера
 OUT=""
