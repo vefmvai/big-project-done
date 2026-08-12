@@ -11,16 +11,30 @@
 
 set -euo pipefail
 
+# Путь к себе разбираем средствами самого bash, без dirname и прочих внешних
+# команд: при урезанном PATH они не находятся, и обёртка падала бы с кодом 127 —
+# ровно той посторонней бедой, от которой она и должна защищать. Поймано
+# тестом «нет python3», который запускает её с пустым PATH.
+папка_файла() {
+  case "$1" in
+    */*) printf '%s\n' "${1%/*}" ;;
+    *)   printf '%s\n' "." ;;
+  esac
+}
+
 SRC="${BASH_SOURCE[0]}"
 # Разворачиваем цепочку симлинков: скрипт могут слинковать в чужой bin/.
-while [ -L "$SRC" ]; do
-  TGT="$(readlink "$SRC")"
-  case "$TGT" in
-    /*) SRC="$TGT" ;;
-    *)  SRC="$(cd "$(dirname "$SRC")" && pwd)/$TGT" ;;
-  esac
-done
-DIR="$(cd "$(dirname "$SRC")/.." && pwd)"
+# readlink — внешняя команда, поэтому только если она вообще доступна.
+if command -v readlink >/dev/null 2>&1; then
+  while [ -L "$SRC" ]; do
+    TGT="$(readlink "$SRC")"
+    case "$TGT" in
+      /*) SRC="$TGT" ;;
+      *)  SRC="$(cd "$(папка_файла "$SRC")" && pwd)/$TGT" ;;
+    esac
+  done
+fi
+DIR="$(cd "$(папка_файла "$SRC")/.." && pwd)"
 
 if ! command -v python3 >/dev/null 2>&1; then
   echo "ОШИБКА: не найден python3 — прогон невозможен." >&2
