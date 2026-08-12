@@ -89,8 +89,8 @@ python3 - "$WARN" <<'PY'
 import pathlib, sys
 p = pathlib.Path(sys.argv[1]) / ".bpd/STATE.md"
 p.write_text(p.read_text("utf-8").replace(
-    "**Остановились на:** этап 04 выполнен",
-    "**Остановились на:** прогресс 40 %, этап 04 выполнен"), "utf-8")
+    "**Остановились на:** этап 03.1 выполнен",
+    "**Остановились на:** прогресс 40 %, этап 03.1 выполнен"), "utf-8")
 PY
 run "$WARN"
 if [ "$CODE" -eq 0 ]; then
@@ -250,7 +250,7 @@ if [ -z "$SAY" ]; then ok "не BPD-проект → хук старта мол�
 
 SAY="$(start_say "$CLEAN")"
 case "$SAY" in
-  *"/bpd:check 04"*) ok "хук старта подаёт следующий шаг из STATE.md" ;;
+  *"/bpd:check 03.1"*) ok "хук старта подаёт следующий шаг из STATE.md" ;;
   *) bad "следующий шаг не подан: $SAY" ;;
 esac
 case "$SAY" in

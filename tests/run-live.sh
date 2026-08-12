@@ -227,13 +227,13 @@ fi
 # ── 5. /bpd:check ──────────────────────────────────────────────────────────
 if run_this check; then
   echo
-  echo "── /bpd:check 04 ──"
+  echo "── /bpd:check 03.1 ──"
   P="$(project ch)"
   # Ничего не стираем: этап 04 выполнен и не проверен по-настоящему.
   # Раньше тест удалял чужой CHECK.md, и история в STATE.md оказывалась
   # впереди работы — проверщик это законно замечал.
-  live "$P" "/bpd:check 04"
-  F="$P/.bpd/stages/04-svodka/CHECK.md"
+  live "$P" "/bpd:check 03.1"
+  F="$P/.bpd/stages/03.1-svodka/CHECK.md"
   if [ -f "$F" ]; then
     ok "CHECK.md создан"
     for h in "## Задачи из плана" "## Заявленные файлы" "## Чеклист качества" "## Итог" "## Замечания"; do
@@ -273,6 +273,105 @@ if run_this update; then
     bad "нового этапа с номером 08 нет; сейчас: $AFTER"
   fi
   validate "$P" "после /bpd:update"
+fi
+
+# ── 7. /bpd:start с нуля ───────────────────────────────────────────────────
+# Первая команда, которую видит человек. До сих пор живым прогоном не
+# проверялась вовсе — сверялись только команды, работающие на готовой папке.
+if run_this start; then
+  echo
+  echo "── /bpd:start на пустой папке ──"
+  P="$STAND/st0"; mkdir -p "$P"
+  live "$P" "/bpd:start Проект: сборник из трёх коротких заметок о работе над долгими проектами, для себя. Результат: три файла с текстом и оглавление к ним. Ограничения: русский язык, сплошной текст без списков. Масштаб быстрый, режим автоматический, субагенты не нужны. Подтверждения не спрашивай: считай, что я на всё согласен, и доводи дело до конца."
+  if [ -d "$P/.bpd" ]; then
+    ok "папка .bpd/ создана"
+    for f in PROJECT.md ROADMAP.md STATE.md config.json; do
+      if [ -f "$P/.bpd/$f" ]; then ok "создан $f"; else bad "нет $f"; fi
+    done
+    STAGES=0
+    for d in "$P"/.bpd/stages/*; do [ -d "$d" ] && STAGES=$((STAGES+1)); done
+    if [ "$STAGES" -ge 1 ]; then ok "папок этапов: $STAGES"; else bad "папок этапов нет"; fi
+    # Имя папки — две цифры с ведущим нулём и латиница (rules § 2).
+    KRIVYE=""
+    for d in "$P"/.bpd/stages/*; do
+      [ -d "$d" ] || continue
+      b="$(basename "$d")"
+      echo "$b" | grep -qE '^[0-9]{2}-[a-z0-9]+(-[a-z0-9]+)*$' || KRIVYE="$KRIVYE $b"
+    done
+    if [ -z "$KRIVYE" ]; then ok "имена папок по формату NN-latinicej"; else bad "кривые имена:$KRIVYE"; fi
+    if [ -f "$P/CLAUDE.md" ]; then ok "CLAUDE.md в корне создан"; else bad "CLAUDE.md в корне нет"; fi
+  else
+    bad "папка .bpd/ не создана — команда не довела дело до конца"
+    note "$(echo "$OUT" | tail -3)"
+  fi
+  validate "$P" "после /bpd:start"
+fi
+
+# ── 8. Режим свежего контекста: планировщик-субагент ────────────────────────
+# Здесь жил самый злой баг августа: субагенту обещали, что шаблон «уже
+# загружен», и он выдумывал формат сам. Проверяем, что план приходит по шаблону.
+if run_this subagents; then
+  echo
+  echo "── /bpd:plan 07 через субагента (use_subagents: true) ──"
+  P="$(project sub)"
+  rm -f "$P/.bpd/stages/07-final/PLAN.md"
+  python3 - "$P" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1]) / ".bpd/config.json"
+d = json.loads(p.read_text("utf-8"))
+d["scale"] = "large"; d["use_subagents"] = True; d["mode"] = "automatic"
+p.write_text(json.dumps(d, ensure_ascii=False, indent=2) + "\n", "utf-8")
+PYEOF
+  live "$P" "/bpd:plan 07"
+  F="$P/.bpd/stages/07-final/PLAN.md"
+  if [ -f "$F" ]; then
+    ok "субагент создал PLAN.md"
+    MISS=""
+    for h in "## Цель" "## Контекст" "## Задачи" "## Что нужно для начала" "## Ожидаемый результат" "## Чеклист качества"; do
+      grep -qF "${h}" "$F" || MISS="$MISS ${h}"
+    done
+    if [ -z "$MISS" ]; then
+      ok "план совпадает с шаблоном пункт в пункт — Б1 не вернулся"
+    else
+      bad "ВОЗВРАТ Б1: субагент выдумал формат, нет разделов:$MISS"
+    fi
+    if awk '/^## /{s=$0} /^[[:space:]]*[-*][[:space:]]*\[[ xX]\]/{if (s !~ /Задачи/) print}' "$F" | grep -q .; then
+      bad "ВОЗВРАТ Б14: бокс вне раздела «Задачи»"
+    else
+      ok "галочек вне раздела «Задачи» нет"
+    fi
+  else
+    bad "субагент не создал PLAN.md"
+    note "$(echo "$OUT" | tail -3)"
+  fi
+  validate "$P" "после плана через субагента"
+fi
+
+# ── 9. Полный круг: plan → do → check на одном этапе ───────────────────────
+# Отдельные команды уже проверены. Здесь важно другое: доходит ли этап от
+# «не начат» до «принят» подряд, и растёт ли прогресс.
+if run_this krug; then
+  echo
+  echo "── Полный круг plan → do → check на этапе 07 ──"
+  P="$(project krug)"
+  rm -f "$P/.bpd/stages/07-final/PLAN.md"
+  live "$P" "/bpd:plan 07"
+  live "$P" "/bpd:do 07"
+  live "$P" "/bpd:check 07"
+  D="$P/.bpd/stages/07-final"
+  for f in PLAN.md RESULT.md CHECK.md; do
+    if [ -f "$D/$f" ]; then ok "круг дошёл до $f"; else bad "круг не дошёл до $f"; fi
+  done
+  if [ -f "$D/CHECK.md" ]; then
+    V="$(awk '/^## Итог/{f=1;next} /^## /{f=0} f' "$D/CHECK.md" | grep -vE '^[[:space:]]*$|^>' | head -1 | tr -d '*_ ')"
+    case "$V" in
+      Принято|Доработать) ok "вердикт круга — одно слово: $V" ;;
+      *) bad "вердикт круга третьим словом: «${V}»" ;;
+    esac
+  fi
+  live "$P" "/bpd:status"
+  want "прогресс вырос до 60 %" "60"
+  validate "$P" "после полного круга"
 fi
 
 echo
