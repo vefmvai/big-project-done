@@ -157,6 +157,10 @@ p = pathlib.Path("tests/run-tests.sh")
 примана = chr(36) + "PASS" + chr(187)
 p.write_text(p.read_text("utf-8") + chr(10) + "echo " + chr(34) + примана + chr(34) + chr(10), "utf-8")'
 
+break_it "П16 пустая папка в репозитории" "ПУСТАЯ ПАПКА" '
+import pathlib
+pathlib.Path("templates/pustaya-papka").mkdir()'
+
 echo
 echo "── Правило переписано дословно: предупреждение, но не ошибка ──"
 reset_copy
