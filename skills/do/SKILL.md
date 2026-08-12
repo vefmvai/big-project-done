@@ -68,7 +68,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, AskUserQuestion
 ### Если `use_subagents: true`
 
 Запустить исполнителя в свежем контексте. Все пути — настоящие и абсолютные
-(`rules.md` § 8).
+(`rules.md` § 9).
 
 ```
 Task(
