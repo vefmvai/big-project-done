@@ -148,11 +148,11 @@ if run_this status; then
   echo "── /bpd:status на готовой фикстуре ──"
   P="$(project st)"
   live "$P" "/bpd:status"
-  want "прогресс посчитан как 50 %" "50"
+  want "прогресс посчитан как 40 %" "40"
   want "видно принятый этап" "Принят"
   want "видно отменённый этап" "Отменён"
   if echo "$OUT" | grep -q "◐"; then ok "видно этап в работе"; else bad "этап в работе не показан"; fi
-  if echo "$OUT" | grep -qE "01.*02.*07.*03"; then
+  if echo "$OUT" | grep -qE "01.*02.*07.*03.*04"; then
     ok "этапы идут в порядке карты, а не по возрастанию номера"
   else
     note "порядок этапов проверить глазами (вывод свободной формы)"
@@ -227,11 +227,13 @@ fi
 # ── 5. /bpd:check ──────────────────────────────────────────────────────────
 if run_this check; then
   echo
-  echo "── /bpd:check 03 ──"
+  echo "── /bpd:check 04 ──"
   P="$(project ch)"
-  rm -f "$P/.bpd/stages/03-tekst/CHECK.md"
-  live "$P" "/bpd:check 03"
-  F="$P/.bpd/stages/03-tekst/CHECK.md"
+  # Ничего не стираем: этап 04 выполнен и не проверен по-настоящему.
+  # Раньше тест удалял чужой CHECK.md, и история в STATE.md оказывалась
+  # впереди работы — проверщик это законно замечал.
+  live "$P" "/bpd:check 04"
+  F="$P/.bpd/stages/04-svodka/CHECK.md"
   if [ -f "$F" ]; then
     ok "CHECK.md создан"
     for h in "## Задачи из плана" "## Заявленные файлы" "## Чеклист качества" "## Итог" "## Замечания"; do
