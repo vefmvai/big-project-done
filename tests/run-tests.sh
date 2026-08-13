@@ -101,6 +101,62 @@ fi
 has "предупреждение при этом видно" "предупреждений: 1, ошибок: 0"
 
 echo
+echo "── use_subagents: обе формы записи ──"
+
+# set_subagents <папка> <json-значение поля>
+set_subagents() {
+  python3 - "$1" "$2" <<'PY'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1]) / ".bpd/config.json"
+d = json.loads(p.read_text("utf-8"))
+d["use_subagents"] = json.loads(sys.argv[2])
+p.write_text(json.dumps(d, ensure_ascii=False, indent=2), "utf-8")
+PY
+}
+
+# Новая форма на правильном значении обязана молчать: сторож, который ругается
+# на рекомендованную настройку, обесценивает собственные предупреждения.
+ROLES="$STAND/roles"
+cp -R "$CLEAN" "$ROLES"
+set_subagents "$ROLES" '{"plan": false, "do": false, "check": true}'
+run "$ROLES"
+if [ "$CODE" -eq 0 ]; then ok "объект по ролям принят → код 0"; else bad "объект по ролям → код $CODE"; fi
+has "и ни одного упрёка на правильную запись" "предупреждений: 0, ошибок: 0"
+
+# Старая булевая запись — тот же проект без единой правки файла.
+OLDBOOL="$STAND/oldbool"
+cp -R "$CLEAN" "$OLDBOOL"
+set_subagents "$OLDBOOL" 'false'
+run "$OLDBOOL"
+if [ "$CODE" -eq 0 ]; then ok "старое булево значение работает → код 0"; else bad "булево значение → код $CODE"; fi
+has "старая форма тоже без упрёков" "предупреждений: 0, ошибок: 0"
+
+# Опечатка в имени роли — именно то, ради чего лишние ключи ловятся.
+TYPO="$STAND/typo"
+cp -R "$CLEAN" "$TYPO"
+set_subagents "$TYPO" '{"plan": false, "do": false, "chek": true}'
+run "$TYPO"
+if [ "$CODE" -eq 1 ]; then ok "опечатка в имени роли → код 1"; else bad "опечатка в роли → код $CODE"; fi
+has "и роль названа поимённо" "в use_subagents лишний ключ chek"
+
+# Не-булево внутри объекта ловится так же, как строка вместо булева.
+STRROLE="$STAND/strrole"
+cp -R "$CLEAN" "$STRROLE"
+set_subagents "$STRROLE" '{"plan": false, "do": false, "check": "да"}'
+run "$STRROLE"
+if [ "$CODE" -eq 1 ]; then ok "строка внутри объекта → код 1"; else bad "строка внутри объекта → код $CODE"; fi
+has "названа конкретная роль" "use_subagents.check"
+
+# interactive + автономный исполнитель — предупреждение, а не запрет.
+CONFLICT="$STAND/conflict"
+cp -R "$CLEAN" "$CONFLICT"
+set_subagents "$CONFLICT" '{"plan": false, "do": true, "check": true}'
+run "$CONFLICT"
+if [ "$CODE" -eq 0 ]; then ok "спор mode и do не роняет код"; else bad "спор mode и do → код $CODE"; fi
+has "но сказано вслух" "ИСПОЛНИТЕЛЬ В СВЕЖЕМ КОНТЕКСТЕ ПРИ mode: interactive"
+has "и это ровно одно предупреждение" "предупреждений: 1, ошибок: 0"
+
+echo
 echo "── Ошибка код выхода роняет ──"
 ERR="$STAND/err"
 cp -R "$CLEAN" "$ERR"

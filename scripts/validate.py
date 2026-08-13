@@ -35,7 +35,7 @@ import re
 import subprocess
 import sys
 
-ПРОВЕРКИ = 22  # столько блоков ниже; сверяется тестом
+ПРОВЕРКИ = 23  # столько блоков ниже; сверяется тестом
 
 for поток in (sys.stdout, sys.stderr):
     try:
@@ -498,6 +498,8 @@ def main() -> int:
     # ── 17. config.json: набор ключей и машинные значения (rules.md § 7) ───
     конфиг_путь = os.path.join(bpd, "config.json")
     беды_конфига = []
+    конфиг: dict = {}
+    роли: dict[str, bool] = {}
     if not os.path.isfile(конфиг_путь):
         беды_конфига.append("файла нет вовсе")
     else:
@@ -518,8 +520,25 @@ def main() -> int:
         if конфиг.get("mode") not in ("interactive", "automatic"):
             беды_конфига.append(f"mode = {конфиг.get('mode')!r}, "
                                 f"а можно interactive или automatic")
-        if not isinstance(конфиг.get("use_subagents"), bool):
-            беды_конфига.append("use_subagents должен быть true/false, а не строка")
+        # Две формы записи (rules.md § 7): булево — одинаково всем трём ролям,
+        # объект — каждой отдельно. Старые проекты записаны булевым и обязаны
+        # работать без правки файла.
+        свежесть = конфиг.get("use_subagents")
+        if isinstance(свежесть, bool):
+            роли = {"plan": свежесть, "do": свежесть, "check": свежесть}
+        elif isinstance(свежесть, dict):
+            for ключ in sorted(set(свежесть) - {"plan", "do", "check"}):
+                беды_конфига.append(f"в use_subagents лишний ключ {ключ} — "
+                                    f"ролей ровно три: plan, do, check")
+            for ключ in ("plan", "do", "check"):
+                значение = свежесть.get(ключ, False)
+                if not isinstance(значение, bool):
+                    беды_конфига.append(f"use_subagents.{ключ} = {значение!r}, "
+                                        f"а надо true или false")
+                роли[ключ] = значение is True
+        else:
+            беды_конфига.append("use_subagents должен быть true/false или объектом "
+                                "{plan, do, check}, а не строка")
         if not isinstance(конфиг.get("features"), dict):
             беды_конфига.append("features должен быть объектом (пустой {} — законно)")
         if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(конфиг.get("created", ""))):
@@ -629,6 +648,18 @@ def main() -> int:
             ок("Git: незакоммиченного хвоста не накопилось")
     else:
         ок("Git-проверка неприменима (проект не в git или принятых этапов нет)")
+
+    # ── 23. mode и use_subagents не спорят друг с другом (предупреждение) ───
+    # Ошибкой не делаем: бывает и осознанный выбор. Но молчать нельзя —
+    # человек просил подтверждать шаги, а исполнитель их не спросит (rules.md § 7).
+    if конфиг.get("mode") == "interactive" and роли.get("do"):
+        предупредить("ИСПОЛНИТЕЛЬ В СВЕЖЕМ КОНТЕКСТЕ ПРИ mode: interactive — "
+                     "спросить он не сможет",
+                     ["в config.json mode = interactive: человек просил подтверждений",
+                      "use_subagents для роли do включён, а субагент не видит человека",
+                      "либо do: false, либо mode: automatic — иначе подтверждений не будет"])
+    else:
+        ок("Настройки mode и use_subagents друг другу не противоречат")
 
     # ── итог ────────────────────────────────────────────────────────────────
     статусы = {"принято": принятых, "всего этапов": len(активные),

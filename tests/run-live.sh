@@ -347,7 +347,52 @@ PYEOF
   validate "$P" "после плана через субагента"
 fi
 
-# ── 9. Полный круг: plan → do → check на одном этапе ───────────────────────
+# ── 9. Флажки по ролям: проверка свежая, планирование в текущем чате ───────
+# Новая форма записи use_subagents (rules.md § 7). Проверяем, что команды
+# на ней работают: план — в текущем чате, проверка — своим ходом до конца.
+#
+# ЧЕСТНО ПРО ГРАНИЦУ. Прогон НЕ ВИДИТ, кто именно проверял: `claude -p`
+# отдаёт только последний ответ, запуск субагента в нём не отличить от работы
+# в основном контексте. Здесь проверяется, что новая форма не ломает команды,
+# а не то, что проверщик был отдельным. Считать это доказательством
+# независимости нельзя.
+if run_this roli; then
+  echo
+  echo "── use_subagents по ролям: plan в чате, check свежим взглядом ──"
+  P="$(project roli)"
+  rm -f "$P/.bpd/stages/07-final/PLAN.md"
+  python3 - "$P" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1]) / ".bpd/config.json"
+d = json.loads(p.read_text("utf-8"))
+d["use_subagents"] = {"plan": False, "do": False, "check": True}
+d["mode"] = "automatic"
+p.write_text(json.dumps(d, ensure_ascii=False, indent=2) + "\n", "utf-8")
+PYEOF
+  live "$P" "/bpd:plan 07"
+  if [ -f "$P/.bpd/stages/07-final/PLAN.md" ]; then
+    ok "план создан при plan: false"
+  else
+    bad "план не создан — новая форма записи сломала /bpd:plan"
+    note "$(echo "$OUT" | tail -3)"
+  fi
+  live "$P" "/bpd:check 03.1"
+  F="$P/.bpd/stages/03.1-svodka/CHECK.md"
+  if [ -f "$F" ]; then
+    ok "CHECK.md создан при check: true"
+    V="$(awk '/^## Итог/{f=1;next} /^## /{f=0} f' "$F" | grep -vE '^[[:space:]]*$|^>' | head -1 | tr -d '*_ ')"
+    case "$V" in
+      Принято|Доработать) ok "вердикт ровно одним словом: $V" ;;
+      *) bad "вердикт третьим словом: «${V}» — этап останется без статуса" ;;
+    esac
+  else
+    bad "CHECK.md не создан — новая форма записи сломала /bpd:check"
+    note "$(echo "$OUT" | tail -3)"
+  fi
+  validate "$P" "после работы на флажках по ролям"
+fi
+
+# ── 10. Полный круг: plan → do → check на одном этапе ──────────────────────
 # Отдельные команды уже проверены. Здесь важно другое: доходит ли этап от
 # «не начат» до «принят» подряд, и растёт ли прогресс.
 if run_this krug; then

@@ -2,8 +2,12 @@
   "project_name": "",
   "scale": "medium",
   "mode": "interactive",
-  "use_subagents": false,
+  "use_subagents": {
+    "plan": false,
+    "do": false,
+    "check": true
+  },
   "features": {},
   "created": "",
-  "bpd_version": "2.1.5"
+  "bpd_version": "2.2.0"
 }

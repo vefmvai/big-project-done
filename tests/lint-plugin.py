@@ -236,8 +236,17 @@ def п4_машинные_значения(тексты: dict[str, str]) -> None:
     for поле, допустимые in ЗНАЧЕНИЯ.items():
         if конфиг.get(поле) not in допустимые:
             беды.append(f"{поле} = {конфиг.get(поле)!r}, а можно только {sorted(допустимые)}")
-    if not isinstance(конфиг.get("use_subagents"), bool):
-        беды.append("use_subagents должен быть true/false, а не строка")
+    # Две формы записи, обе законны (rules.md § 7): булево — всем трём ролям
+    # одинаково, объект — каждой отдельно.
+    свежесть = конфиг.get("use_subagents")
+    if isinstance(свежесть, dict):
+        for ключ in sorted(set(свежесть) - {"plan", "do", "check"}):
+            беды.append(f"в use_subagents лишний ключ {ключ} — ролей три: plan, do, check")
+        for ключ, значение in sorted(свежесть.items()):
+            if not isinstance(значение, bool):
+                беды.append(f"use_subagents.{ключ} = {значение!r}, а надо true или false")
+    elif not isinstance(свежесть, bool):
+        беды.append("use_subagents должен быть true/false или объектом {plan, do, check}")
     if not isinstance(конфиг.get("features"), dict):
         беды.append("features должен быть объектом (пустой {} — законно)")
 

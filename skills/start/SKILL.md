@@ -95,14 +95,20 @@ AskUserQuestion:
   "project_name": "название из интервью",
   "scale": "fast | medium | large",
   "mode": "interactive | automatic",
-  "use_subagents": false,
+  "use_subagents": {"plan": false, "do": false, "check": true},
   "features": {},
   "created": "ГГГГ-ММ-ДД",
-  "bpd_version": "2.1.5"
+  "bpd_version": "2.2.0"
 }
 ```
 
-`use_subagents` по умолчанию: `fast` → `false`, `medium` → `false`, `large` → `true`.
+`use_subagents` — это три отдельных флажка, по одному на роль. Таблица умолчаний
+и обе законные формы записи — в `rules.md` § 7. Коротко: `fast` → `false`,
+`medium` → проверка в свежем контексте, план и работа в текущем чате,
+`large` → все три роли в свежем контексте.
+
+При `mode: interactive` не включать роль `do` без просьбы человека: субагент
+его не видит и подтверждений не спросит.
 
 Пример заполненных фич:
 
